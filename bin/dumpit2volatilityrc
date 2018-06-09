@@ -33,7 +33,7 @@ if majorVersion == 10 and minorVersion == 0:
     majorVersion, minorVersion = 6, 4
 
 if os.path.exists(output_filename) and not args.force:
-    print("A file already exists at the default output location. Aborting - Either delete %s or rerun with '--force'" % output_filename)
+    print("A file already exists for the default output filename. Aborting. either delete %s or rerun with '--force'" % output_filename)
     sys.exit(1)
 output_file = open(output_filename, 'w')
 if data['machineInfo']['architectureType'] == 'x64':
@@ -41,15 +41,16 @@ if data['machineInfo']['architectureType'] == 'x64':
 else:
     kdbg = '0x%xL' % (kdDebuggerData & 0xffffffff)
 
-registry.PluginImporter()
-profiles = registry.get_plugin_classes(obj.Profile)
 guessed_profile = 'WinXPSP2x86'
-for profile_name, profile in profiles.iteritems():
-    if (architectureType == 'x64' and profile._md_memory_model == '64bit') or (architectureType == 'x32' and profile._md_memory_model == '32bit'):
-        if profile._md_major == majorVersion and profile._md_minor == minorVersion and hasattr(profile, '_md_build') and profile._md_build == buildNumber:
-            guessed_profile = profile_name
-            print('Found')
-            break
+if HAVE_VOLATILITY:
+    registry.PluginImporter()
+    profiles = registry.get_plugin_classes(obj.Profile)
+    for profile_name, profile in profiles.iteritems():
+        if (architectureType == 'x64' and profile._md_memory_model == '64bit') or (architectureType == 'x32' and profile._md_memory_model == '32bit'):
+            if profile._md_major == majorVersion and profile._md_minor == minorVersion and hasattr(profile, '_md_build') and profile._md_build == buildNumber:
+                guessed_profile = profile_name
+                print('Found')
+                break
 
 config = ConfigParser.RawConfigParser()
 config.optionxform = str
