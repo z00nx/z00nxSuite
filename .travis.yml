@@ -6,4 +6,4 @@ install:
   - "pip install wheel"
   - "pip wheel . --process-dependency-links"
   - "pip install . --process-dependency-links"
-script: dumpit2volatilityrc
+script: dumpit2volatilityrc --help
