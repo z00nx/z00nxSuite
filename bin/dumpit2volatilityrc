@@ -5,6 +5,7 @@ import sys
 import re
 import ConfigParser
 import json
+import hashlib
 try:
     import volatility.obj as obj
     import volatility.registry as registry
@@ -15,51 +16,144 @@ except ImportError:
 parser = argparse.ArgumentParser(description='Generate volatilityrc files from dumpt json files')
 parser.add_argument('--file', '-f', type=argparse.FileType('r'), required=True)
 parser.add_argument('--force', action='store_true')
+parser.add_argument('--skip-sha256', '-s', action='store_true')
 args = parser.parse_args()
 
 input_filename = os.path.realpath(args.file.name)
 dump_filename = re.sub(r'\.json$', '.dmp', input_filename)
 input_file = open(input_filename, 'r')
 output_filename = os.path.dirname(os.path.realpath(args.file.name)) + '/volatilityrc'
+output_file = open(output_filename, 'w')
+
+print('[+] Input JSON: %s' % input_filename)
+print('[+] Input DMP: %s' % dump_filename)
+print('[+] Output: %s' % output_filename)
 
 data = json.load(input_file)
-kdDebuggerData = data['debugInfo']['kdDebuggerData']
+
+# Machine Info
+userName = data['machineInfo']['userName']
 architectureType = data['machineInfo']['architectureType']
+maxPhysicalMemory = data['machineInfo']['maxPhysicalMemory']
+timestamp = data['machineInfo']['timestamp']
+machineName = data['machineInfo']['machineName']
+numberProcessors = data['machineInfo']['numberProcessors']
+workgroupName = data['machineInfo']['workgroupName']
+machineId = data['machineInfo']['machineId']
+date = data['machineInfo']['date']
+# Service Info
+totalAccessiblePages = data['serviceInfo']['totalAccessiblePages']
+totalInaccessiblePages = data['serviceInfo']['totalInaccessiblePages']
+totalPhysicalPages = data['serviceInfo']['totalPhysicalPages']
+serviceVersion = data['serviceInfo']['serviceVersion']
+serviceName = data['serviceInfo']['serviceName']
+ntStatus = data['serviceInfo']['ntStatus']
+# OS Version
 majorVersion = data['osVersion']['majorVersion']
 minorVersion = data['osVersion']['minorVersion']
 buildNumber = data['osVersion']['buildNumber']
-# Volatility treats Windows 10's major/minor version as 6.4
-if majorVersion == 10 and minorVersion == 0:
-    majorVersion, minorVersion = 6, 4
+productType = data['osVersion']['productType']
+productTypes = {1: 'Work Station', 2: 'Domain Controller', 3: 'Server'}
+productString = productTypes[productType]
+servicePackMajor = data['osVersion']['servicePackMajor']
+servicePackMinor = data['osVersion']['servicePackMinor']
+# Debug Info
+pdbName = data['debugInfo']['pdbName']
+pdbAge = data['debugInfo']['pdbAge']
+pdbGuid = data['debugInfo']['pdbGuid']
+ntosBase = data['debugInfo']['ntosBase']
+regCr0 = data['debugInfo']['regCr0']
+regCr3 = data['debugInfo']['regCr3']
+regCr4 = data['debugInfo']['regCr4']
+regNtCr3 = data['debugInfo']['regNtCr3']
+# File Info
+fileSize = data['fileInfo']['fileSize']
+fileSizeOnDisk = os.path.getsize(dump_filename)
+
+print("[+] Timestamp: %s" % (timestamp))
+print("[+] Date of capture: %s" % (date))
+print('[+] Created using: %s - %s - Status: %s' % (serviceName, serviceVersion, ntStatus))
+print('[+] Architecture: %s' % architectureType)
+print('[+] Number Processors: %s' % numberProcessors)
+print('[+] Max Physical Memory: %s GB (%s bytes)' % (maxPhysicalMemory/(1024 * 1024 * 1024), maxPhysicalMemory))
+print('[+] Pages: %s/%s' % (totalAccessiblePages, totalPhysicalPages))
+
+if totalInaccessiblePages != 0:
+    print('[!] There are %s inaccessible pages' % totalInaccessiblePages)
+
+print('[+] Machine ID: %s' % machineId)
+print('[+] OS: Windows %s.%s(SP%s.%s) (Build %s) %s' % (majorVersion, minorVersion, servicePackMajor, servicePackMinor, buildNumber, productString))
+print("[+] Username: %s\\%s" % (userName, machineName))
+print("[+] Domain: %s" % workgroupName)
+
+if data['machineInfo']['architectureType'] == 'x64':
+    kdDebuggerData = '0x%xL' % (data['debugInfo']['kdDebuggerData'] & 0xffffffffffff)
+    kdpDataBlockEncoded = '0x%xL' % (data['debugInfo']['kdpDataBlockEncoded'] & 0xffffffffffff)
+    kdCopyDataBlock = '0x%xL' % (data['debugInfo']['kdCopyDataBlock'] & 0xffffffffffff)
+    ntosBase = '0x%xL' % (data['debugInfo']['ntosBase'] & 0xffffffffffff)
+else:
+    kdDebuggerData = '0x%xL' % (data['debugInfo']['kdDebuggerData'] & 0xffffffffffff)
+    kdpDataBlockEncoded = '0x%xL' % (data['debugInfo']['kdpDataBlockEncoded'] & 0xffffffffffff)
+    kdCopyDataBlock = '0x%xL' % (data['debugInfo']['kdCopyDataBlock'] & 0xffffffffffff)
+    ntosBase = '0x%xL' % (data['debugInfo']['ntosBase'] & 0xffffffffffff)
+
+print('[+] pdbName: %s' % pdbName)
+print('[+] pdbAge: %s' % pdbAge)
+print('[+] pdbGuid: %s' % pdbGuid)
+print('[+] kdDebuggerData: %s' % kdDebuggerData)
+print('[+] kdpDataBlockEncoded: %s' % kdpDataBlockEncoded)
+print('[+] kdCopyDataBlock: %s' % kdCopyDataBlock)
+print('[+] ntosBase: %s' % ntosBase)
+print('[+] regCr0: %s' % regCr0)
+print('[+] regCr3: %s' % regCr3)
+print('[+] regCr4: %s' % regCr4)
+print('[+] regNtCr3: %s' % regNtCr3)
+
+if fileSizeOnDisk == fileSize:
+    print("[>] File size matches the value in json file: %s bytes" % fileSizeOnDisk)
+else:
+    print("[!] The filesize on disk is different from the value in the json file: Size on disk: %s, Size in json file: %s" % (fileSizeOnDisk, fileSize))
+
+if args.skip_sha256:
+    print('[!] Skipping SHA256 verification')
+else:
+    sha256 = data['fileInfo']['sha256']
+    print('[>] Computing SHA256 of Dumpfile')
+    dump_file_hash = hashlib.sha256()
+    dump_file_hash.update(open(dump_filename).read())
+    if dump_file_hash.hexdigest() == sha256:
+        print('[>] SHA256 of Dumpfile matches the value in json file: %s' % dump_file_hash.hexdigest())
+    else:
+        print('[!] SHA256 of Dumpfile does not match. SHA256 from json file: %s - SHA256 of Dumpfile: %s' % (sha256, dump_file_hash.hexdigest()))
 
 if os.path.exists(output_filename) and not args.force:
     print("A file already exists for the default output filename. Aborting. either delete %s or rerun with '--force'" % output_filename)
     sys.exit(1)
-output_file = open(output_filename, 'w')
-if data['machineInfo']['architectureType'] == 'x64':
-    kdbg = '0x%xL' % (kdDebuggerData & 0xffffffffffff)
-else:
-    kdbg = '0x%xL' % (kdDebuggerData & 0xffffffff)
 
-guessed_profile = 'WinXPSP2x86'
+# Volatility treats Windows 10's major/minor version as 6.4
+if majorVersion == 10 and minorVersion == 0:
+    majorVersion, minorVersion = 6, 4
+
+guessed_profile = None
 if HAVE_VOLATILITY:
+    print('[>] Volatility detected')
+    print('[>] Searching for the best profile using architecture and kernel version - %s - %s.%s-%s' % (architectureType, majorVersion, minorVersion, buildNumber))
     registry.PluginImporter()
     profiles = registry.get_plugin_classes(obj.Profile)
     for profile_name, profile in profiles.iteritems():
         if (architectureType == 'x64' and profile._md_memory_model == '64bit') or (architectureType == 'x32' and profile._md_memory_model == '32bit'):
             if profile._md_major == majorVersion and profile._md_minor == minorVersion and hasattr(profile, '_md_build') and profile._md_build == buildNumber:
                 guessed_profile = profile_name
-                print('Found')
+                print('[>] Profile Found: %s' % guessed_profile)
                 break
 
 config = ConfigParser.RawConfigParser()
 config.optionxform = str
-config.set('DEFAULT', 'KDBG', kdbg)
+config.set('DEFAULT', 'KDBG', kdDebuggerData)
 config.set('DEFAULT', 'LOCATION', ("file://%s" % dump_filename))
-config.set('DEFAULT', 'PROFILE', guessed_profile)
+
+if guessed_profile:
+    config.set('DEFAULT', 'PROFILE', guessed_profile)
+
 config.write(output_file)
-print('Input JSON: %s' % input_filename)
-print('Input DMP: %s' % dump_filename)
-print('Output: %s' % output_filename)
-print('KDBG: %s' % kdbg)
-print('Profile: %s' % guessed_profile)
+print('[>] Output file written')
