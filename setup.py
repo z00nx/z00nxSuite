@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='git-credential-keepasshttp',
+    name='z00nxSuite',
     version='1.0',
     description='Collection of scripts',
     url='https://github.com/z00nx/z00nxSuite',
