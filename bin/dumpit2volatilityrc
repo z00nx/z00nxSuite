@@ -146,6 +146,8 @@ if HAVE_VOLATILITY:
                 guessed_profile = profile_name
                 print('[>] Profile Found: %s' % guessed_profile)
                 break
+else:
+    print('[!] Volatility not detected. Unable to guess profile')
 
 config = ConfigParser.RawConfigParser()
 config.optionxform = str
