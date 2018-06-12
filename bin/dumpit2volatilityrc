@@ -136,7 +136,7 @@ else:
         print('[!] Unable compute SHA256 of Dumpfile')
 
 if os.path.exists(output_filename) and not args.force:
-    print("A file already exists for the default output filename. Aborting. either delete %s or rerun with '--force'" % output_filename)
+    print("[!] A file already exists for the default output filename. Aborting. either delete %s or rerun with '--force'" % output_filename)
     sys.exit(1)
 
 # Volatility treats Windows 10's major/minor version as 6.4
