@@ -126,11 +126,14 @@ else:
     sha256 = data['fileInfo']['sha256']
     print('[>] Computing SHA256 of Dumpfile')
     dump_file_hash = hashlib.sha256()
-    dump_file_hash.update(open(dump_filename).read())
-    if dump_file_hash.hexdigest() == sha256:
-        print('[>] SHA256 of Dumpfile matches the value in json file: %s' % dump_file_hash.hexdigest())
-    else:
-        print('[!] SHA256 of Dumpfile does not match. SHA256 from json file: %s - SHA256 of Dumpfile: %s' % (sha256, dump_file_hash.hexdigest()))
+    try:
+        dump_file_hash.update(open(dump_filename).read())
+        if dump_file_hash.hexdigest() == sha256:
+            print('[>] SHA256 of Dumpfile matches the value in json file: %s' % dump_file_hash.hexdigest())
+        else:
+            print('[!] SHA256 of Dumpfile does not match. SHA256 from json file: %s - SHA256 of Dumpfile: %s' % (sha256, dump_file_hash.hexdigest()))
+    except IOError:
+        print('[!] Unable compute SHA256 of Dumpfile')
 
 if os.path.exists(output_filename) and not args.force:
     print("A file already exists for the default output filename. Aborting. either delete %s or rerun with '--force'" % output_filename)
