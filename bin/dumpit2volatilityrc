@@ -38,7 +38,10 @@ maxPhysicalMemory = data['machineInfo']['maxPhysicalMemory']
 timestamp = data['machineInfo']['timestamp']
 machineName = data['machineInfo']['machineName']
 numberProcessors = data['machineInfo']['numberProcessors']
-workgroupName = data['machineInfo']['workgroupName']
+if 'workgroupName' in data['machineInfo']:
+    workgroupName = data['machineInfo']['workgroupName']
+if 'domainName' in data['machineInfo']:
+    domainName = data['machineInfo']['domainName']
 machineId = data['machineInfo']['machineId']
 date = data['machineInfo']['date']
 # Service Info
@@ -75,7 +78,7 @@ print("[+] Date of capture: %s" % (date))
 print('[+] Created using: %s - %s - Status: %s' % (serviceName, serviceVersion, ntStatus))
 print('[+] Architecture: %s' % architectureType)
 print('[+] Number Processors: %s' % numberProcessors)
-print('[+] Max Physical Memory: %s GB (%s bytes)' % (maxPhysicalMemory/(1024 * 1024 * 1024), maxPhysicalMemory))
+print('[+] Max Physical Memory: %s GB (%s bytes)' % (maxPhysicalMemory / (1024 * 1024 * 1024), maxPhysicalMemory))
 print('[+] Pages: %s/%s' % (totalAccessiblePages, totalPhysicalPages))
 
 if totalInaccessiblePages != 0:
@@ -83,8 +86,11 @@ if totalInaccessiblePages != 0:
 
 print('[+] Machine ID: %s' % machineId)
 print('[+] OS: Windows %s.%s(SP%s.%s) (Build %s) %s' % (majorVersion, minorVersion, servicePackMajor, servicePackMinor, buildNumber, productString))
-print("[+] Username: %s\\%s" % (userName, machineName))
-print("[+] Domain: %s" % workgroupName)
+print("[+] Username: %s\\%s" % (machineName, userName))
+if 'workgroupName' in locals():
+    print("[+] Work Group: %s" % workgroupName)
+if 'domainName' in locals():
+    print("[+] Domain: %s" % domainName)
 
 if data['machineInfo']['architectureType'] == 'x64':
     kdDebuggerData = '0x%xL' % (data['debugInfo']['kdDebuggerData'] & 0xffffffffffff)
