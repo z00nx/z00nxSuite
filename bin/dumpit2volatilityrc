@@ -6,18 +6,26 @@ import re
 import ConfigParser
 import json
 import hashlib
+
+parser = argparse.ArgumentParser(description='Generate a volatilityrc file from a dumpit json file')
+parser.add_argument('--file', '-f', type=argparse.FileType('r'), required=True)
+parser.add_argument('--force', action='store_true')
+parser.add_argument('--skip-sha256', '-s', action='store_true')
+parser.add_argument('--volatility-path', '-vp')
+args = parser.parse_args()
+
+if args.volatility_path:
+    if os.path.isdir(args.volatility_path):
+        sys.path.append(args.volatility_path)
+    else:
+        print('[!] The provided path to volatility is not a directory')
+
 try:
     import volatility.obj as obj
     import volatility.registry as registry
     HAVE_VOLATILITY = True
 except ImportError:
     HAVE_VOLATILITY = False
-
-parser = argparse.ArgumentParser(description='Generate a volatilityrc file from a dumpit json file')
-parser.add_argument('--file', '-f', type=argparse.FileType('r'), required=True)
-parser.add_argument('--force', action='store_true')
-parser.add_argument('--skip-sha256', '-s', action='store_true')
-args = parser.parse_args()
 
 input_filename = os.path.realpath(args.file.name)
 dump_filename = re.sub(r'\.json$', '.dmp', input_filename)
