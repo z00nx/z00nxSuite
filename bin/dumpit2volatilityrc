@@ -7,11 +7,11 @@ import ConfigParser
 import json
 import hashlib
 
-parser = argparse.ArgumentParser(description='Generate a volatilityrc file from a dumpit json file')
-parser.add_argument('--file', '-f', type=argparse.FileType('r'), required=True)
-parser.add_argument('--force', action='store_true')
-parser.add_argument('--skip-sha256', '-s', action='store_true')
-parser.add_argument('--volatility-path', '-vp')
+parser = argparse.ArgumentParser(description='Generate a volatilityrc file from a DumpIt json file')
+parser.add_argument('--file', '-f', type=argparse.FileType('r'), required=True, help='Input DumpIt json file')
+parser.add_argument('--force', action='store_true', help='Force overwriting existing volatilityrc file')
+parser.add_argument('--skip-sha256', '-s', action='store_true', help='Skip verification of SHA256 hash')
+parser.add_argument('--volatility-path', '-vp', help='Provide alternative path to volatility source code')
 args = parser.parse_args()
 
 if args.volatility_path:
