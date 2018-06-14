@@ -16,7 +16,7 @@ args = parser.parse_args()
 
 if args.volatility_path:
     if os.path.isdir(args.volatility_path):
-        sys.path.append(args.volatility_path)
+        sys.path = [args.volatility_path] + sys.path
     else:
         print('[!] The provided path to volatility is not a directory')
 
